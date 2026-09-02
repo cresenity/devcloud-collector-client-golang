@@ -1,0 +1,5 @@
+temp
+*.log
+CLAUDE.md
+go.work
+go.work.sum
