@@ -48,7 +48,7 @@ func New(cfg Config) *Collector {
 
 // Enabled melaporkan apakah Report() akan benar-benar menulis apa pun.
 func (c *Collector) Enabled() bool {
-	return c.config.Enabled != nil && *c.config.Enabled
+	return c != nil && c.config.Enabled != nil && *c.config.Enabled
 }
 
 // Report melaporkan satu galat. err boleh berupa error biasa, atau nilai apa pun yang
@@ -65,7 +65,10 @@ func (c *Collector) Report(err interface{}, ctx Context) (wrote bool) {
 		}
 	}()
 
-	if !c.Enabled() || err == nil {
+	// c == nil bisa terjadi kalau pemanggil (mis. gincollector.Recovery) belum sempat
+	// diberi Collector yang sungguhan - dijaga di sini juga, bukan cuma di gincollector,
+	// supaya kontrak "Report tidak pernah panic" tetap berlaku apa pun jalur pemanggilannya.
+	if c == nil || !c.Enabled() || err == nil {
 		return false
 	}
 

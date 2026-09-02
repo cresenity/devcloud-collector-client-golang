@@ -150,3 +150,24 @@ func TestContextFromMemetakanRuteDanQuery(t *testing.T) {
 		t.Errorf("arguments.domain = %q", args["domain"])
 	}
 }
+
+// Regresi: Recovery(nil) - pemanggil yang belum sempat menginisialisasi Collector-nya
+// (mis. lupa memanggil LoadCollector sebelum InitializeRouter) tetap harus memulihkan
+// panic dan menjawab 500 seperti biasa, bukan ikut panic kedua yang lolos dari sini.
+func TestRecoveryDenganCollectorNilTetapMemulihkanPanic(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	r := gin.New()
+	r.Use(Recovery(nil))
+	r.GET("/api/info", func(*gin.Context) {
+		panic(errors.New("boom"))
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/info", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, mau %d", w.Code, http.StatusInternalServerError)
+	}
+}

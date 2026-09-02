@@ -370,3 +370,19 @@ func TestReportDariDalamRecoverTetapMenangkapRantaiPanic(t *testing.T) {
 func panicDalamAplikasi() {
 	panic("panic dari fungsi aplikasi")
 }
+
+// Regresi: Recovery pada package gin memanggil collectorInstance.Report(...) langsung
+// dari dalam recover()-nya sendiri - kalau Report tidak menjaga diri dari receiver nil,
+// pemanggil yang belum sempat menginisialisasi Collector-nya (mis. lupa memanggil
+// LoadCollector sebelum InitializeRouter) akan membuat Report ikut panic di dalam
+// recover(), lolos dari jaring pengaman yang justru sedang dibangunnya sendiri.
+func TestReportPadaCollectorNilTidakPanic(t *testing.T) {
+	var c *Collector
+
+	if got := c.Report(errors.New("boom"), Context{}); got != false {
+		t.Fatalf("Report() pada Collector nil = %v, mau false", got)
+	}
+	if got := c.Enabled(); got != false {
+		t.Fatalf("Enabled() pada Collector nil = %v, mau false", got)
+	}
+}
